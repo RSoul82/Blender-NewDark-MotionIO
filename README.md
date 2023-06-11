@@ -4,6 +4,8 @@ Allows Blender to import and export Dark Engine (Thief/Thief 2, System Shock 2) 
 ## Itroduction
 This Blender addon allows the user to import and export motions for the Dark Engine games. Motion flags are also supported, meaning various sounds, weapon effects (etc) can be triggered as the motion plays.
 
+It can also import a .cal file, which gives you an AI skeleton structure but with no frames, which can help if you're starting a new motion from scratch.
+
 ## Credits
 This addon is based heavily on Telliamed's motion conversion Python scripts in the [Blender Toolkit](https://www.ttlg.com/forums/showthread.php?t=136431)<br>
 Much of the code is unchanged. The main differences are the integration into a Blender addon.<br>
@@ -17,7 +19,7 @@ Go to the [Releases](https://github.com/RSoul82/Blender-NewDark-MotionIO/release
 **NO NEED TO UNZIP MANUALLY**
 
 In Blender, go to Edit > Preferences > Addons then Install:<br>
-![Install button](/Screenshots/01_install.jpg)<br>
+![](/Screenshots/01_install.jpg)<br>
 This will install it into the correct folder.
 
 **While you're in the Addons window, make sure the BVH addon is also enabled**
@@ -29,3 +31,18 @@ Find you game's "crf" files and open **Mesh.crf** with a zip program (e.g. 7Zip)
 When the addon is installed it will create a config file with some default values. In your file explorer go to %appdata%\Blender Foundation\Blender\ **version number here** \config\scripts and open **NewDarkMotionIO.cfg**
 
 Edit the value of **supporting_files_dir** to point to where you extracted the files mentioned above. Note that you have to use pairs of back-slashes before each folder, and surround the whole thing with double quotes, e.g: "C:\\Users\\SomeGuyIDK\\Dromed\\Motions\\extra files"
+
+#### Other Options
+**auto_del_temp_bvh**: The addon creates a tempoary .bvh file when importing/exporting. By default it is deleted afte the process, but you can keep it around if you want. Do remember that you can also use the BVH exporter on its own if you want to use a Dark Engine motion in another program.
+
+**max_motion_frames**: This value sets the total number of frames that allow motion flags to be set. The default of 10000 should be fine, but you can change it if you want. During development, some performance issues were noticed as the value increased. Some computers may struggle with the default value, so you can lower it too.
+
+**IF YOU CHANGE THIS FILE, YOU WILL HAVE TO RESTART BLENDER FOR THE CHANGES TO APPLY**
+
+## Importing
+![](/Screenshots/02_import.jpg)<br>
+
+Motion files can be extracted from **Motions.crf**. Each motion has two files: **.mi** and **.mc**, which probably mean "motion info" and "motion capture". This function also allows **.cal** files to be imported, giving you a skeleton in the neutral pose, and not motions.
+
+The import window gives you a few options. The middle two drop downs list all the **.cal** and **.map** files in your supporting files folder:<br>
+![](/Screenshots/03_import_options.jpg)<br>
