@@ -21,7 +21,7 @@
 bl_info = {
     'name': 'Blender NewDark Motion Import/Export',
     'author': 'Tom N Harris, 2.80/2.9x/3.x update by Robin Collier, with help from FireMage with storing motion flags',
-    'version': (1, 0, 0),
+    'version': (1, 0, 1),
     'blender': (3, 5, 1),
     'location': 'File > Import-Export',
     'description': 'Import/Export Dark Engine Motions (or import skeletons via .cal files)',
