@@ -53,8 +53,6 @@ The names of each set of files make it clear which pairs are compatible, but it 
 
 The defaults will be fine for most cases. For burricks and other creatures you will need to select the correct items.
 
-**Known issue**: When importing a cal file, the .bvh importer generates an error, related to there not being any frames, and the temp file does not get deleted.
-
 ## Exporting
 The export function shows up like this in the menu:<br>
 ![](/Screenshots/04_export.jpg)<br>
