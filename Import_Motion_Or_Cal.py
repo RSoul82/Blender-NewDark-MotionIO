@@ -493,8 +493,10 @@ def cal2bvh(calname, jointmap, bvh):
     if isinstance(bvh, str):
         bvh = open(bvh, 'w', encoding='ascii', buffering=1)
     write_bvh(bvh, torsos, joints, jointmap)
+    
+    # fake frames info to allow temp bvh file to be deleted
     bvh.write("MOTION\nFrames: 0\nFrame Time: 0.033333\n")
-
+    bvh.write("0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0\n")
 
 def mi2bvh(miname, calname, jointmap, bvh):
     """
@@ -544,6 +546,7 @@ def run_bvh_import_addon(bvhfile):
     bpy.ops.import_anim.bvh(filepath = bvhfile,
                             axis_forward='Y',
                             axis_up='Z',
+                            update_scene_fps=True,
                             update_scene_duration=True)
 
 #No longer used, but can be reinstated to provide a way of showing which frames have flags
@@ -610,7 +613,7 @@ def importCAL(calfile, mapfile, bvhfile):
         run_bvh_import_addon(bvhfile)
     except:
         pass
-
+    
 def load(operator,
          context,
          filepath="",
