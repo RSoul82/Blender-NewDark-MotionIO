@@ -493,10 +493,9 @@ def cal2bvh(calname, jointmap, bvh):
     if isinstance(bvh, str):
         bvh = open(bvh, 'w', encoding='ascii', buffering=1)
     write_bvh(bvh, torsos, joints, jointmap)
-    
     # fake frames info to allow temp bvh file to be deleted
-    bvh.write("MOTION\nFrames: 0\nFrame Time: 0.033333\n")
-    bvh.write("0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0\n")
+    bvh.write("MOTION\nFrames: 1\nFrame Time: 0.033333\n")
+    bvh.write("0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.006603 0.039873 0.495965 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000\n")
 
 def mi2bvh(miname, calname, jointmap, bvh):
     """
@@ -606,13 +605,13 @@ def importCAL(calfile, mapfile, bvhfile):
         jointmap = builtin_map(None)
     cal2bvh(calfile, jointmap, bvhfile)
     
-    """run the bvh import addon
-    lack of frames causes an error, but this can be suppressed
-    for this secnario where we know no frames are required"""
-    try:
+    '''Old code for supressing error message when no frames were being written.'''
+    '''try:
         run_bvh_import_addon(bvhfile)
     except:
-        pass
+        pass'''
+    
+    run_bvh_import_addon(bvhfile)
     
 def load(operator,
          context,
@@ -623,6 +622,7 @@ def load(operator,
          del_bvh=True,
          ):
     from os.path import splitext
+    import time
     
     filepath_split = splitext(filepath)
     filepath_no_ext = filepath_split[0]
@@ -636,7 +636,8 @@ def load(operator,
         
     elif file_ext == ".cal":
         importCAL(filepath, map_file, temp_bvh_path)
-    
+        bpy.ops.anim.keyframe_clear_v3d() #remove dummy keyframe
+
     if del_bvh and os.path.isfile(temp_bvh_path):
         os.remove(temp_bvh_path)
     
