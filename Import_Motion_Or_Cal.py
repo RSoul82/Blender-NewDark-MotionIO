@@ -493,9 +493,13 @@ def cal2bvh(calname, jointmap, bvh):
     if isinstance(bvh, str):
         bvh = open(bvh, 'w', encoding='ascii', buffering=1)
     write_bvh(bvh, torsos, joints, jointmap)
-    # fake frames info to allow temp bvh file to be deleted
-    bvh.write("MOTION\nFrames: 1\nFrame Time: 0.033333\n")
-    bvh.write("0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.006603 0.039873 0.495965 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000\n")
+    if str.endswith(calname, 'manbase.cal'):
+        #cancells out offset for abdomen joint
+        bvh.write("MOTION\nFrames: 1\nFrame Time: 0.033333\n")
+        bvh.write("0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.006603 0.039873 0.495965 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000\n")
+    else:
+        bvh.write("MOTION\nFrames: 0\nFrame Time: 0.033333\n")
+    bvh.close()
 
 def mi2bvh(miname, calname, jointmap, bvh):
     """
@@ -539,6 +543,7 @@ def mi2bvh(miname, calname, jointmap, bvh):
             else:
                 bvh.write(write_vector(None) + " ")
         bvh.write("\n")
+    bvh.close()
     return info['FLAGS']
 
 def run_bvh_import_addon(bvhfile):
@@ -605,13 +610,11 @@ def importCAL(calfile, mapfile, bvhfile):
         jointmap = builtin_map(None)
     cal2bvh(calfile, jointmap, bvhfile)
     
-    '''Old code for supressing error message when no frames were being written.'''
-    '''try:
+    #Supress error message when no frames were being written.
+    try:
         run_bvh_import_addon(bvhfile)
     except:
-        pass'''
-    
-    run_bvh_import_addon(bvhfile)
+        pass
     
 def load(operator,
          context,
