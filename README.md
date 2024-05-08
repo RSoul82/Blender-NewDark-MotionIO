@@ -1,7 +1,7 @@
 # Blender NewDark Motion Import/Export
 Allows Blender to import and export Dark Engine (Thief/Thief 2, System Shock 2) motions, including flags.
 
-## Itroduction
+## Introduction
 This Blender addon allows the user to import and export motions for the Dark Engine games. Motion flags are also supported, meaning various sounds, weapon effects (etc) can be triggered as the motion plays.
 
 It can also import a .cal file, which gives you an AI skeleton structure but with no frames, which can help if you're starting a new motion from scratch.
@@ -33,7 +33,7 @@ When the addon is installed it will create a config file with some default value
 Edit the value of **supporting_files_dir** to point to where you extracted the files mentioned above. Note that you have to use pairs of back-slashes before each folder, and surround the whole thing with double quotes, e.g: "C:\\Users\\SomeGuyIDK\\Dromed\\Motions\\extra files"
 
 #### Other Options
-**auto_del_temp_bvh**: The addon creates a tempoary .bvh file when importing/exporting. By default it is deleted afte the process, but you can keep it around if you want. Do remember that you can also use the BVH exporter on its own if you want to use a Dark Engine motion in another program.
+**auto_del_temp_bvh**: The addon creates a temporary .bvh file when importing/exporting. By default it is deleted after the process, but you can keep it around if you want. Do remember that you can also use the BVH exporter on its own if you want to use a Dark Engine motion in another program.
 
 **max_motion_frames**: This value sets the total number of frames that allow motion flags to be set. The default of 10000 should be fine, but you can change it if you want. During development, some performance issues were noticed as the value increased. Some computers may struggle with the default value, so you can lower it too.
 
