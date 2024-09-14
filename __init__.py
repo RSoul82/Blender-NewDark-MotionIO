@@ -264,15 +264,15 @@ class ImportMotionOrCal(bpy.types.Operator, ImportHelper):
         return Import_Motion_Or_Cal.load(self, context, **keywords)
        
 creature_types = (
-                 ("0x7FFFF", "human", "", 0x7FFFF),
-                 ("0x3FFFF", "droid", "", 0x3FFFF),
-                 ("0xFF", "spidbot", "", 0xFF),
-                 ("0x1FFFFFFF", "arachnid", "", 0x1FFFFFFF),
-                 ("0xE", "plyrarm", "", 0xE),
-                 ("0x3FFFFF", "bugbeast", "", 0x3FFFFF),
-                 ("0x1FFFFF", "crayman", "", 0x1FFFFF),
-                 ("0x7F", "sweel", "", 0x7F),
-                 ("0x7", "overlord", "", 0x7),
+                 ("0x7FFFF", "human", ""),
+                 ("0x3FFFF", "droid", ""),
+                 ("0xFF", "spidbot", ""),
+                 ("0x1FFFFFFF", "arachnid", ""),
+                 ("0xE", "plyrarm", ""),
+                 ("0x3FFFFF", "bugbeast", ""),
+                 ("0x1FFFFF", "crayman", ""),
+                 ("0x7F", "sweel", ""),
+                 ("0x7", "overlord", ""),
                  )
         
 class ExportMotion(bpy.types.Operator, ExportHelper):
@@ -299,7 +299,7 @@ class ExportMotion(bpy.types.Operator, ExportHelper):
     crettype: EnumProperty(
                            name='Creature Type',
                            items=creature_types,
-                           default=0x7FFFF,
+                           default="0x7FFFF",
                            )
     
     del_bvh: BoolProperty(
