@@ -443,7 +443,7 @@ def count_flagged_frames():
     end = scene.frame_end
     
     frame_number = 0
-    for i in range(start, end):
+    for i in range(start, end+1):
         mf = scene.flags[i]
         if mf.flag != set():
             total = add_frame_flags(mf.flag)
@@ -458,6 +458,7 @@ def set_flagged_frames_count(file_path):
         file.seek(byte_pos)
         file.write(pack('<1l', flagged_frames_count))
         file.flush()
+        file.close()
 
 def write_frame_flag_values(mifile):
     with open(mifile, 'ab') as file:
@@ -493,7 +494,8 @@ def write_mc(mc, location, joints):
 def reorder(co, order):
     return (co[order.index('X')], co[order.index('Y')], co[order.index('Z')])
 
-def bvh2mi(bvhfile, jointmap, mifile, miname, crettype):
+def bvh2mi(bvhfile, jointmap, root, miname, crettype):
+    mi_file_path = os.path.join(root, miname)
     bvh = open(bvhfile, 'r', encoding='ascii')
     info, channels = read_bvh(bvh)
     if not channels[0][0]:
@@ -522,11 +524,11 @@ def bvh2mi(bvhfile, jointmap, mifile, miname, crettype):
         raise ParseError("unexpected end-of-file")
     info['NAME'] = miname
     info['CRET'] = crettype
-    write_mi(open(mifile+'.mi', 'wb'), info, translated)
-    write_mc(open(mifile+'_.mc', 'wb'), position, [f for f in joints if f])
+    write_mi(open(mi_file_path+'.mi', 'wb'), info, translated)
+    write_mc(open(mi_file_path+'_.mc', 'wb'), position, [f for f in joints if f])
     #update flags info
-    set_flagged_frames_count(mifile+'.mi')
-    write_frame_flag_values(mifile+'.mi')
+    set_flagged_frames_count(mi_file_path+'.mi')
+    write_frame_flag_values(mi_file_path+'.mi')
 
 def export_bvh(root_dir, start_frame, end_frame, map_file, dest_short_filename_no_ext):
     bvh_temp_file_path = os.path.join(root_dir, dest_short_filename_no_ext + ".bvh")
@@ -541,10 +543,10 @@ def export_bvh(root_dir, start_frame, end_frame, map_file, dest_short_filename_n
 def convert_bvh(root_dir, dest_short_filename_no_ext, bvh_temp_file, map_file, creature_type):
     crettype = creature_type
     jointmap = read_map(open(map_file, 'r', encoding='ascii'))
-    
+       
     mi_filename_no_ext = os.path.join(root_dir, dest_short_filename_no_ext)
     
-    bvh2mi(bvh_temp_file, jointmap, mi_filename_no_ext, root_dir, crettype)    
+    bvh2mi(bvh_temp_file, jointmap, root_dir, dest_short_filename_no_ext, crettype)
         
 def save(operator, 
          context,
@@ -554,20 +556,30 @@ def save(operator,
          crettype=0x0,
          del_bvh=True,
          ):
-    file_root = os.path.dirname(filepath)
-    file_no_ext = os.path.splitext(filepath)[0]
-    temp_bvh = os.path.join(file_root, file_no_ext + '.bvh')
-    #needs to be a user param
-    map_file_path = os.path.join(support_file_dir, map_file)
-    cret_type = int(crettype,16)
     
-    start_frame = bpy.context.scene.frame_start
-    end_frame = bpy.context.scene.frame_end
-    
-    temp_bvh_path = export_bvh(file_root, start_frame, end_frame, map_file_path, file_no_ext)
-    convert_bvh(file_root, file_no_ext, temp_bvh_path, map_file_path, cret_type)
-    
-    if del_bvh and os.path.isfile(temp_bvh_path):
-        os.remove(temp_bvh_path)
-    
-    return {'FINISHED'}
+    active_object = context.object
+    if hasattr(active_object, 'type') and active_object.type == 'ARMATURE':
+        file_root = os.path.dirname(filepath)
+        file_no_ext = os.path.splitext(filepath)[0]
+        short_filename_no_ext = os.path.basename(file_no_ext)
+        temp_bvh = os.path.join(file_root, short_filename_no_ext + '.bvh')
+        #needs to be a user param
+        map_file_path = os.path.join(support_file_dir, map_file)
+        cret_type = int(crettype,16)
+        
+        start_frame = bpy.context.scene.frame_start
+        end_frame = bpy.context.scene.frame_end
+        
+        temp_bvh_path = export_bvh(file_root, start_frame, end_frame, map_file_path, short_filename_no_ext)
+        
+        convert_bvh(file_root, short_filename_no_ext, temp_bvh_path, map_file_path, cret_type)
+        
+        if del_bvh and os.path.isfile(temp_bvh_path):
+            os.remove(temp_bvh_path)
+            
+        return {'FINISHED'}
+    else:
+        message = 'Active object needs to be an Armature/Motion.'
+        operator.report({'INFO'}, message)
+        print(message)
+        return {'CANCELLED'}

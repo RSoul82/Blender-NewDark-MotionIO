@@ -21,8 +21,8 @@
 bl_info = {
     'name': 'Blender NewDark Motion Import/Export',
     'author': 'Tom N Harris, 2.80/2.9x/3.x update by Robin Collier, with help from FireMage with storing motion flags',
-    'version': (1, 0, 3),
-    'blender': (3, 5, 1),
+    'version': (1, 1, 0),
+    'blender': (4, 1),
     'location': 'File > Import-Export',
     'description': 'Import/Export Dark Engine Motions (or import skeletons via .cal files)',
 #    'wiki_url': '',
@@ -44,12 +44,15 @@ import json
 from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty, FloatProperty, BoolProperty, EnumProperty, IntProperty
 from bpy_extras.io_utils import ImportHelper, ExportHelper
-#from bpy.app.handlers import persistent
 
 default_config = {
 'supporting_files_dir': 'C:\\Users\\Robin\\Resources\\Dromed\\Motions\\bvh_convert',
 'auto_del_temp_bvh': True,
-'max_motion_frames': 10000
+'max_motion_frames': 10000,
+'map_file': 'BIPED.MAP',
+'creature_type': 0,
+'import_cal_file': 'manbase.cal',
+'import_map_file': 'BIPED.MAP'
 }
 
 config_filename = 'NewDarkMotionIO.cfg'
@@ -100,16 +103,6 @@ def read_map_files(file_dir):
             full_path = os.path.join(file_dir,file)
             map_file_list.append((file, file, full_path))
     return map_file_list
-
-#@persistent
-#markers are not sorted by frame number, probably sorted by when each one is added
-"""def my_handler(scene):
-    this_fame = scene.frame_current
-    #marker = scene.timeline_markers[this_fame]
-    for marker in scene.timeline_markers:
-        print(marker)
-    
-bpy.app.handlers.frame_change_pre.append(my_handler)"""
 
 class FrameFlag(bpy.types.PropertyGroup):
     flag: bpy.props.EnumProperty(
@@ -224,6 +217,30 @@ class SceneFrameFlagPanel(bpy.types.Panel):
             clear_row = self.layout.row()
             clear_row.operator("scene.frame_flags_clear")
             clear_row.operator("scene.frame_flags_clear_all")
+            
+class MotionTypePanel(bpy.types.Panel):
+    bl_idname = 'SCENE_MTYPE_PT_dark_engine_motion_io'
+    bl_label = 'Creature Type'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'scene'
+    
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        col.prop(context.scene, 'map_file')
+        col.prop(context.scene, 'creature_type')
+        col.operator('file.open_motion_config', icon = 'SETTINGS')
+        
+class OpenConfigFile(bpy.types.Operator):
+    """Open the config file to change the default values for this addon. Blender must be closed and restarted for the changes to take effect. Be careful with the file structure"""
+    bl_idname = 'file.open_motion_config'
+    bl_label = 'Open Config File'
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    def execute(self, context):
+        os.startfile(config_filepath)
+        return {'FINISHED'}
 
 class ImportMotionOrCal(bpy.types.Operator, ImportHelper):
     '''Import from Motion or Cal file (.mi/.cal)'''
@@ -243,13 +260,13 @@ class ImportMotionOrCal(bpy.types.Operator, ImportHelper):
     cal_file: EnumProperty(
                            name='Cal File',
                            items = read_cal_files(support_file_str),
-                           default='manbase.cal',
+                           default=tryConfig('import_cal_file', config_from_file),
                            )
     
     map_file: EnumProperty(
                            name='Map File',
                            items = read_map_files(support_file_str),
-                           default='BIPED.MAP',
+                           default=tryConfig('import_map_file', config_from_file),
                            )
                            
     del_bvh: BoolProperty(
@@ -257,7 +274,7 @@ class ImportMotionOrCal(bpy.types.Operator, ImportHelper):
                           default = tryConfig('auto_del_temp_bvh', config_from_file),
                           description = 'Delete the tempoary .bvh file which is created during the import process'
                           )
-
+                          
     def execute(self, context):
         from . import Import_Motion_Or_Cal
         keywords = self.as_keywords(ignore=('','filter_glob'))
@@ -265,6 +282,7 @@ class ImportMotionOrCal(bpy.types.Operator, ImportHelper):
        
 creature_types = (
                  ("0x7FFFF", "human", ""),
+                 ("0xFFFFF", "human with sword", ""),
                  ("0x3FFFF", "droid", ""),
                  ("0xFF", "spidbot", ""),
                  ("0x1FFFFFFF", "arachnid", ""),
@@ -274,7 +292,9 @@ creature_types = (
                  ("0x7F", "sweel", ""),
                  ("0x7", "overlord", ""),
                  )
-        
+
+support_file_str = tryConfig('supporting_files_dir', config_from_file)
+
 class ExportMotion(bpy.types.Operator, ExportHelper):
     '''Export to Motion file (.mi)'''
     bl_idname = 'export_scene.motion'
@@ -283,24 +303,11 @@ class ExportMotion(bpy.types.Operator, ExportHelper):
     filter_glob: StringProperty(default='*.mi', options={'HIDDEN'})
     bl_options = {'PRESET'}
     
-    support_file_str = tryConfig('supporting_files_dir', config_from_file)
     support_file_dir: StringProperty(
                                      name = 'Supporting Files Location', 
                                      default = support_file_str, 
                                      description='Folder containing .cal, .map files etc'
                                      )
-                                     
-    map_file: EnumProperty(
-                           name='Map File',
-                           items = read_map_files(support_file_str),
-                           default='BIPED.MAP',
-                           )
-   
-    crettype: EnumProperty(
-                           name='Creature Type',
-                           items=creature_types,
-                           default="0x7FFFF",
-                           )
     
     del_bvh: BoolProperty(
                           name = 'Delete Temp .bvh File',
@@ -311,6 +318,8 @@ class ExportMotion(bpy.types.Operator, ExportHelper):
     def execute(self, context):
         from . import Export_Motion
         keywords = self.as_keywords(ignore=('check_existing','filter_glob'))
+        keywords['map_file'] = context.scene.map_file
+        keywords['crettype'] = context.scene.creature_type
         return Export_Motion.save(self, context, **keywords)
         
     
@@ -331,6 +340,8 @@ classes = (
             ClearFlags,
             ClearFlagsFromAll,
             ExportMotion,
+            MotionTypePanel,
+            OpenConfigFile,
             )
 
 def register():
@@ -341,6 +352,8 @@ def register():
     bpy.types.Scene.flags = bpy.props.CollectionProperty(type=FrameFlag)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
 
+    bpy.types.Scene.map_file = EnumProperty(name = 'Map File', items = read_map_files(support_file_str), description = 'File assigning joint names to IDs', default = tryConfig('export_map_file', config_from_file))
+    bpy.types.Scene.creature_type = EnumProperty(name = 'Creature Type', items = creature_types, description = 'Type of bone/joinr structure to use', default = tryConfig('creature_type', config_from_file))
 
 def unregister():
     for c in classes:

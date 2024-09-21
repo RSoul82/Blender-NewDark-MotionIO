@@ -632,12 +632,13 @@ def load(operator,
     file_ext = filepath_split[1]
     map_file = os.path.join(support_file_dir, map_file) #user choice from a dropdown
     temp_bvh_path = os.path.join(filepath_no_ext + ".bvh")
-    
-    if file_ext == ".mi":
+       
+    if file_ext.lower() == ".mi":
+        print('ext is mi!')
         cal_file = os.path.join(support_file_dir, cal_file) #user choice from a dropdown
-        flags = importMotion(filepath, map_file, cal_file, temp_bvh_path)        
+        importMotion(filepath, map_file, cal_file, temp_bvh_path)        
         
-    elif file_ext == ".cal":
+    elif file_ext.lower() == ".cal":
         importCAL(filepath, map_file, temp_bvh_path)
         bpy.ops.anim.keyframe_clear_v3d() #remove dummy keyframe
 
