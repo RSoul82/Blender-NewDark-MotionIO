@@ -20,8 +20,8 @@
 
 bl_info = {
     'name': 'Blender NewDark Motion Import/Export',
-    'author': 'Tom N Harris, 2.80/2.9x/3.x update by Robin Collier, with help from FireMage with storing motion flags',
-    'version': (1, 1, 0),
+    'author': 'Robin Collier (R Soul), based on standalone Python scripts from Tom N Harris (Telliamed), with help from FireMage with storing motion flags',
+    'version': (1, 2, 1),
     'blender': (4, 1),
     'location': 'File > Import-Export',
     'description': 'Import/Export Dark Engine Motions (or import skeletons via .cal files)',
@@ -41,6 +41,7 @@ if 'bpy' in locals():
 import bpy
 import os
 import json
+from . import utils
 from bpy.types import Operator, AddonPreferences
 from bpy.props import StringProperty, FloatProperty, BoolProperty, EnumProperty, IntProperty
 from bpy_extras.io_utils import ImportHelper, ExportHelper
@@ -49,7 +50,7 @@ default_config = {
 'supporting_files_dir': 'C:\\Users\\Robin\\Resources\\Dromed\\Motions\\bvh_convert',
 'auto_del_temp_bvh': True,
 'max_motion_frames': 10000,
-'map_file': 'BIPED.MAP',
+'export_map_file': 'BIPED.MAP',
 'creature_type': 0,
 'import_cal_file': 'manbase.cal',
 'import_map_file': 'BIPED.MAP'
@@ -59,34 +60,37 @@ config_filename = 'NewDarkMotionIO.cfg'
 config_path = bpy.utils.user_resource('CONFIG', path='scripts', create=True)
 config_filepath = os.path.join(config_path, config_filename)
 
-def load_config():
-    config_file = open(config_filepath, 'r')
-    config_from_file = json.load(config_file)
-    config_file.close()
-    return config_from_file
-
-try:
-    config_file = open(config_filepath, 'r')
-    config_from_file = json.load(config_file)
-    config_file.close()
-except IOError:
+def create_default_config():
     config_file = open(config_filepath, 'w')
     json.dump(default_config, config_file, indent=4, sort_keys=True)
     config_file.close()
-    load_config()
+    
+if not os.path.isfile(config_filepath):
+    create_default_config()   
 
-#Try to get a value from a config file. Return ... if key not founnd.
-def tryConfig(key, config_from_file):
+def load_config():
     try:
+        config_file = open(config_filepath, 'r')
+        config_from_file = json.load(config_file)
+        config_file.close()
+        return config_from_file
+    except IOError:
+        create_default_config()
+        load_config()
+        
+
+#Try to get a value from a config file. If key not found, return default value, and add it to config file for future reference 
+def tryConfig(key):
+    try:
+        config_from_file = load_config()
         return config_from_file[key]
     except:
+        config_from_file = load_config()
+        config_from_file[key] = default_config[key]
+        config_file = open(config_filepath, 'w')
+        json.dump(config_from_file, config_file, indent=4, sort_keys=True)
         config_file.close()
-        config_from_file[key] = default_config[key] #add missing key with default value
-        config_update = open(config_filepath, 'w')
-        json.dump(config_from_file, config_update, indent = 4, sort_keys = True)
-        config_update.close()
-        load_config()
-        return config_from_file[key]
+        return default_config[key]
 
 def read_cal_files(file_dir):
     cal_file_list = []
@@ -137,7 +141,7 @@ class SyncFrameFlags(bpy.types.Operator):
     
     def execute(self, context):
         scene = context.scene
-        max_frames = tryConfig('max_motion_frames', config_from_file)
+        max_frames = tryConfig('max_motion_frames')
         while len(scene.flags) < max_frames:
             scene.flags.add()
         return {"FINISHED"}
@@ -203,7 +207,7 @@ class SceneFrameFlagPanel(bpy.types.Panel):
 
     def draw(self, context):
         scene = context.scene
-        max_frames = tryConfig('max_motion_frames', config_from_file)
+        max_frames = tryConfig('max_motion_frames')
         layout = self.layout
         column = layout.column(align=True)
         if len(scene.flags) < max_frames:
@@ -220,7 +224,7 @@ class SceneFrameFlagPanel(bpy.types.Panel):
             
 class MotionTypePanel(bpy.types.Panel):
     bl_idname = 'SCENE_MTYPE_PT_dark_engine_motion_io'
-    bl_label = 'Creature Type'
+    bl_label = 'Creature Type (NewDark Motion Import/Export)'
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = 'scene'
@@ -239,7 +243,8 @@ class OpenConfigFile(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
     
     def execute(self, context):
-        os.startfile(config_filepath)
+        #os.startfile(config_filepath)
+        utils.open_file(config_filepath)
         return {'FINISHED'}
 
 class ImportMotionOrCal(bpy.types.Operator, ImportHelper):
@@ -250,7 +255,8 @@ class ImportMotionOrCal(bpy.types.Operator, ImportHelper):
     filter_glob: StringProperty(default='*.mi;*.cal', options={'HIDDEN'})
     bl_options = {'PRESET'}
 
-    support_file_str = tryConfig('supporting_files_dir', config_from_file)
+    support_file_str = tryConfig('supporting_files_dir')
+    
     support_file_dir: StringProperty(
                                      name = 'Supporting Files Location', 
                                      default = support_file_str, 
@@ -260,18 +266,18 @@ class ImportMotionOrCal(bpy.types.Operator, ImportHelper):
     cal_file: EnumProperty(
                            name='Cal File',
                            items = read_cal_files(support_file_str),
-                           default=tryConfig('import_cal_file', config_from_file),
+                           default=tryConfig('import_cal_file'),
                            )
     
     map_file: EnumProperty(
                            name='Map File',
                            items = read_map_files(support_file_str),
-                           default=tryConfig('import_map_file', config_from_file),
+                           default=tryConfig('import_map_file'),
                            )
                            
     del_bvh: BoolProperty(
                           name = 'Delete Temp .bvh File',
-                          default = tryConfig('auto_del_temp_bvh', config_from_file),
+                          default = tryConfig('auto_del_temp_bvh'),
                           description = 'Delete the tempoary .bvh file which is created during the import process'
                           )
                           
@@ -293,7 +299,7 @@ creature_types = (
                  ("0x7", "overlord", ""),
                  )
 
-support_file_str = tryConfig('supporting_files_dir', config_from_file)
+support_file_str = tryConfig('supporting_files_dir')
 
 class ExportMotion(bpy.types.Operator, ExportHelper):
     '''Export to Motion file (.mi)'''
@@ -311,14 +317,14 @@ class ExportMotion(bpy.types.Operator, ExportHelper):
     
     del_bvh: BoolProperty(
                           name = 'Delete Temp .bvh File',
-                          default = tryConfig('auto_del_temp_bvh', config_from_file),
+                          default = tryConfig('auto_del_temp_bvh'),
                           description = 'Delete the tempoary .bvh file which is created during the export process'
                           )
     
     def execute(self, context):
         from . import Export_Motion
         keywords = self.as_keywords(ignore=('check_existing','filter_glob'))
-        keywords['map_file'] = context.scene.map_file
+        keywords['export_map_file'] = context.scene.map_file
         keywords['crettype'] = context.scene.creature_type
         return Export_Motion.save(self, context, **keywords)
         
@@ -352,8 +358,8 @@ def register():
     bpy.types.Scene.flags = bpy.props.CollectionProperty(type=FrameFlag)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
 
-    bpy.types.Scene.map_file = EnumProperty(name = 'Map File', items = read_map_files(support_file_str), description = 'File assigning joint names to IDs', default = tryConfig('export_map_file', config_from_file))
-    bpy.types.Scene.creature_type = EnumProperty(name = 'Creature Type', items = creature_types, description = 'Type of bone/joinr structure to use', default = tryConfig('creature_type', config_from_file))
+    bpy.types.Scene.map_file = EnumProperty(name = 'Map File', items = read_map_files(support_file_str), description = 'File assigning joint names to IDs', default = tryConfig('export_map_file'))
+    bpy.types.Scene.creature_type = EnumProperty(name = 'Creature Type', items = creature_types, description = 'Type of bone/joinr structure to use', default = tryConfig('creature_type'))
 
 def unregister():
     for c in classes:
