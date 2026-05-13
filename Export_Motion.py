@@ -552,7 +552,7 @@ def save(operator,
          context,
          filepath="",
          support_file_dir="",
-         map_file="",
+         export_map_file="",
          crettype=0x0,
          del_bvh=True,
          ):
@@ -564,7 +564,7 @@ def save(operator,
         short_filename_no_ext = os.path.basename(file_no_ext)
         temp_bvh = os.path.join(file_root, short_filename_no_ext + '.bvh')
         #needs to be a user param
-        map_file_path = os.path.join(support_file_dir, map_file)
+        map_file_path = os.path.join(support_file_dir, export_map_file)
         cret_type = int(crettype,16)
         
         start_frame = bpy.context.scene.frame_start
